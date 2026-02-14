@@ -1,0 +1,31 @@
+# Entorno virtual
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Outputs / resultados
+results/
+*.png
+
+# Sistema
+.DS_Store
+
+# Jupyter (si usas)
+.ipynb_checkpoints/
+
+# VSCode
+.vscode/
+
+# Datos (NO subir datasets)
+DataSets/
+datasets/
+data/
+*.zip
+*.csv
+*.npy
+
+# Logs
+*.log
