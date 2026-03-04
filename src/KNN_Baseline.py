@@ -1,4 +1,4 @@
-# KNN Baseline - Pablo Anel Rancaño
+# KNN Baseline - Pablo Anel Rancano
 
 # src/KNN_Baseline.py
 

@@ -1,4 +1,4 @@
-# Linear Regression Baseline - Pablo Anel Rancaño
+# Logistic Regression Baseline - Pablo Anel Rancano
 
 # src/Logistic_Regression_Baseline.py
 

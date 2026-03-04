@@ -1,4 +1,4 @@
-# Random Forest Baseline - Pablo Anel Rancaño
+# Random Forest Baseline - Pablo Anel Rancano
 
 # src/Random_Forest_Baseline.py
 

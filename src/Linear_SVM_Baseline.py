@@ -1,4 +1,4 @@
-# Linear SVM Baseline - Pablo Anel Rancaño
+# Linear SVM Baseline - Pablo Anel Rancano
 
 # src/Linear_SVM_Baseline.py
 

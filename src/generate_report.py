@@ -1,5 +1,5 @@
 # src/generate_report.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Reads all summary_*.csv files from results/ subfolders and combines them
 into a single comparison report (CSV + Markdown).
@@ -64,7 +64,7 @@ def generate_comparison_report(results_dir: Path) -> None:
 
     csv_out = results_dir / "comparison_all_pipelines.csv"
     combined.to_csv(csv_out, index=False)
-    print(f"\n✓ CSV → {csv_out}")
+    print(f"\nCSV -> {csv_out}")
 
     md_out = results_dir / "comparison_all_pipelines.md"
     lines = [
@@ -125,7 +125,7 @@ def generate_comparison_report(results_dir: Path) -> None:
         lines.append("")
 
     md_out.write_text("\n".join(lines), encoding="utf-8")
-    print(f"✓ MD  → {md_out}")
+    print(f"MD  -> {md_out}")
 
     print("\n" + "=" * 70)
     print(combined.to_string(index=False))

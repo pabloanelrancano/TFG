@@ -1,5 +1,5 @@
 # src/feature_extraction_interpretable.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Extracts a compact set of interpretable features from raw inertial signals.
 
@@ -256,7 +256,7 @@ def main() -> None:
 
     for split in ("train", "test"):
         print(f"\n{'='*60}")
-        print(f"  Extracting interpretable features – {split}")
+        print(f"  Extracting interpretable features - {split}")
         print(f"{'='*60}")
 
         signals = load_inertial_signals(split, ds_path)
@@ -269,9 +269,9 @@ def main() -> None:
         )
 
         out = save_features(df, split, proc_dir, tag="interpretable")
-        print(f"  Saved → {out}")
+        print(f"  Saved -> {out}")
 
-    print("\n✓ Interpretable feature extraction complete.")
+    print("\nInterpretable feature extraction complete.")
 
 
 if __name__ == "__main__":

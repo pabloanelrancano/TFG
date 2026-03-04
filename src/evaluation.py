@@ -1,5 +1,5 @@
 # src/evaluation.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Evaluation framework that works with any feature matrix.
 Does two things for each model:
@@ -157,8 +157,8 @@ def evaluate_model(
     metrics_path = results_dir / f"{results_prefix}_metrics.txt"
     write_text(metrics_path, "\n".join(lines))
 
-    print(f"  ✓ {model_tag} — test_acc={acc_test:.4f}, "
-          f"cv_mean={scores.mean():.4f}±{scores.std():.4f} "
+    print(f"  {model_tag}: test_acc={acc_test:.4f}, "
+          f"cv_mean={scores.mean():.4f}+/-{scores.std():.4f} "
           f"({elapsed:.1f}s)")
 
     return {

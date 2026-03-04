@@ -1,5 +1,5 @@
 # src/feature_extraction_tsfresh.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Brute-force feature extraction using tsfresh.
 
@@ -162,7 +162,7 @@ def report_and_clean_features(
         print(f"  [clean] Inf cells replaced: {n_inf}")
         print(f"  [clean] NaN cells: {n_nan_total} / {n_total_cells} "
               f"({100*n_nan_total/max(n_total_cells,1):.2f}%)")
-        print(f"  [clean] Columns with ≥1 NaN: {n_cols_with_nan}")
+        print(f"  [clean] Columns with >=1 NaN: {n_cols_with_nan}")
 
     # Drop columns that are mostly NaN
     nan_fractions = nan_counts / df.shape[0]
@@ -194,7 +194,7 @@ def report_and_clean_features(
         raise ValueError(f"Cleaning failed: {final_nans} NaN cells remain!")
 
     if verbose:
-        print(f"  [clean] Final: {df.shape[1]} features, 0 NaN/Inf ✓")
+        print(f"  [clean] Final: {df.shape[1]} features, 0 NaN/Inf OK")
 
     return df, report
 
@@ -275,7 +275,7 @@ def main() -> None:
 
     for split in ("train", "test"):
         print(f"\n{'='*60}")
-        print(f"  Extracting tsfresh features – {split}")
+        print(f"  Extracting tsfresh features - {split}")
         print(f"{'='*60}")
 
         signals = load_inertial_signals(split, ds_path)
@@ -291,9 +291,9 @@ def main() -> None:
         )
 
         out = save_features(df_clean, split, proc, cleaning_report=report)
-        print(f"  Saved → {out}")
+        print(f"  Saved -> {out}")
 
-    print("\n✓ tsfresh feature extraction complete.")
+    print("\ntsfresh feature extraction complete.")
 
 
 if __name__ == "__main__":

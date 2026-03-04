@@ -1,5 +1,5 @@
 # src/run_experiments.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Main entry point to run all experiments. Supports three feature pipelines
 (baseline_561, interpretable, tsfresh) and four models (RF, LR, SVM, KNN).
@@ -46,7 +46,7 @@ def _load_interpretable(cfg: Dict[str, Any]):
         X_train_df = load_features("train", proc, tag="interpretable")
         X_test_df = load_features("test", proc, tag="interpretable")
     except FileNotFoundError as e:
-        print(f"\n❌ Interpretable features not found. Run extraction first:")
+        print(f"\nERROR: Interpretable features not found. Run extraction first:")
         print(f"   python src/feature_extraction_interpretable.py")
         raise SystemExit(1) from e
 
@@ -66,7 +66,7 @@ def _load_tsfresh(cfg: Dict[str, Any]):
         X_train_df = load_features("train", proc, tag="tsfresh")
         X_test_df = load_features("test", proc, tag="tsfresh")
     except FileNotFoundError as e:
-        print(f"\n❌ tsfresh features not found. Run extraction first:")
+        print(f"\nERROR: tsfresh features not found. Run extraction first:")
         print(f"   python src/feature_extraction_tsfresh.py")
         raise SystemExit(1) from e
 
@@ -96,7 +96,7 @@ PIPELINE_LOADERS = {
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="TFG HAR – Unified Experiment Runner",
+        description="TFG HAR - Unified Experiment Runner",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -138,7 +138,7 @@ def main() -> None:
         print(f"{'#'*70}")
 
         if pipeline not in PIPELINE_LOADERS:
-            print(f"  ⚠ Unknown pipeline '{pipeline}', skipping.")
+            print(f"  WARN: Unknown pipeline '{pipeline}', skipping.")
             continue
 
         try:
@@ -152,7 +152,7 @@ def main() -> None:
             n_nan = np.isnan(arr).sum()
             n_inf = np.isinf(arr).sum()
             if n_nan > 0 or n_inf > 0:
-                print(f"  ⚠ {label} has {n_nan} NaN and {n_inf} Inf values!")
+                print(f"  WARN: {label} has {n_nan} NaN and {n_inf} Inf values!")
 
         pipe_results_dir = base_results / pipeline
         pipe_results: List[Dict[str, Any]] = []
@@ -181,8 +181,8 @@ def main() -> None:
         csv_path, md_path = write_summary_table(
             pipe_results, pipe_results_dir, pipeline
         )
-        print(f"\n  Summary → {csv_path}")
-        print(f"  Summary → {md_path}")
+        print(f"\n  Summary -> {csv_path}")
+        print(f"  Summary -> {md_path}")
 
         all_pipeline_results[pipeline] = pipe_results
 
@@ -234,7 +234,7 @@ def _write_global_comparison(
 
     csv_path = output_dir / "comparison_all_pipelines.csv"
     df.to_csv(csv_path, index=False)
-    print(f"  Global CSV → {csv_path}")
+    print(f"  Global CSV -> {csv_path}")
 
     md_path = output_dir / "comparison_all_pipelines.md"
     lines = [
@@ -262,7 +262,7 @@ def _write_global_comparison(
                  f"({best_cv['CV Mean']:.4f} ± {best_cv['CV Std']:.4f})")
 
     md_path.write_text("\n".join(lines), encoding="utf-8")
-    print(f"  Global MD  → {md_path}")
+    print(f"  Global MD  -> {md_path}")
 
 
 if __name__ == "__main__":

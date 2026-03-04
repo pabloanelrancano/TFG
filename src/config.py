@@ -1,5 +1,5 @@
 # src/config.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Loads config from config.yaml and allows CLI overrides.
 All other modules call get_config() to get paths and parameters.

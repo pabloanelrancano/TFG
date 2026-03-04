@@ -1,5 +1,5 @@
 # src/dataset_loader.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Loads the UCI HAR 561-feature tabular data (X, y, subjects) for train/test.
 Also keeps the legacy evaluate_model_baseline() so the old per-model scripts
@@ -60,8 +60,8 @@ def assert_dataset_exists(dataset_path: Path = DATASET_PATH) -> None:
             f"Dataset not found:\n  {dataset_path.resolve()}\n\n"
             f"Expected a folder containing train/ and test/ subdirectories.\n"
             f"You can override the path via:\n"
-            f"  • config.yaml  →  dataset_path: /your/path\n"
-            f"  • CLI flag     →  --dataset-path /your/path"
+            f"  - config.yaml  ->  dataset_path: /your/path\n"
+            f"  - CLI flag     ->  --dataset-path /your/path"
         )
 
 

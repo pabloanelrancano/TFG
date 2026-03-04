@@ -1,8 +1,8 @@
 # src/fuzzy_placeholder.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Placeholder stubs for the fuzzy/uncertainty phase (Phase 3).
-Nothing here is implemented yet — just interfaces and TODOs so the
+Nothing here is implemented yet -- just interfaces and TODOs so the
 next phase has a starting point.
 """
 
@@ -102,18 +102,18 @@ def analyze_confusion_pairs(
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("  Fuzzy / Uncertainty Module – Phase 3 Placeholder")
+    print("  Fuzzy / Uncertainty Module - Phase 3 Placeholder")
     print("=" * 60)
     print()
     print("This module contains architecture placeholders for the")
     print("fuzzy/uncertainty phase of the TFG project.")
     print()
     print("Planned components:")
-    print("  • FuzzyVariable – Linguistic variables with membership functions")
-    print("  • FuzzyRuleBase – Mamdani-style rule-based inference")
-    print("  • Confidence analysis – Calibration and ECE")
-    print("  • Ambiguity detection – Low-confidence flagging")
-    print("  • Confusion-pair analysis – Focused on SITTING/STANDING, etc.")
+    print("  - FuzzyVariable - Linguistic variables with membership functions")
+    print("  - FuzzyRuleBase - Mamdani-style rule-based inference")
+    print("  - Confidence analysis - Calibration and ECE")
+    print("  - Ambiguity detection - Low-confidence flagging")
+    print("  - Confusion-pair analysis - Focused on SITTING/STANDING, etc.")
     print()
     print("Status: NOT YET IMPLEMENTED (stubs only)")
     print("See docstrings and integration roadmap for next steps.")

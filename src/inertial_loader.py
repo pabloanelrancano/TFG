@@ -1,8 +1,8 @@
 # src/inertial_loader.py
-# Pablo Anel Rancaño – TFG HAR
+# Pablo Anel Rancano - TFG HAR
 """
 Loads the 9-channel raw inertial signals from UCI HAR's Inertial Signals/ folders.
-Each file has shape (n_windows, 128) — that's 2.56s at 50 Hz.
+Each file has shape (n_windows, 128) -- that's 2.56s at 50 Hz.
 Also validates that window counts match labels and subjects.
 """
 
@@ -96,11 +96,11 @@ def validate_alignment(
     n_sig = next(iter(signals.values())).shape[0]
     if n_sig != len(y):
         raise ValueError(
-            f"[{split}] Inertial windows ({n_sig}) ≠ labels ({len(y)})"
+            f"[{split}] Inertial windows ({n_sig}) != labels ({len(y)})"
         )
     if n_sig != len(subjects):
         raise ValueError(
-            f"[{split}] Inertial windows ({n_sig}) ≠ subjects ({len(subjects)})"
+            f"[{split}] Inertial windows ({n_sig}) != subjects ({len(subjects)})"
         )
     print(f"  [{split}] Alignment OK: {n_sig} windows, "
           f"{len(np.unique(subjects))} subjects, "
