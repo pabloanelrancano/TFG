@@ -1,0 +1,45 @@
+# =============================================================================
+# TFG HAR – Project Configuration
+# =============================================================================
+# Override any value via CLI flags, e.g.:
+#   python src/run_experiments.py --dataset-path /other/path --n-splits 10
+# =============================================================================
+
+# Path to the root of the UCI HAR Dataset (the folder that contains train/ and test/)
+dataset_path: "../DataSets/human+activity+recognition+using+smartphones/UCI HAR Dataset/UCI HAR Dataset"
+
+# Directory where computed feature matrices are cached (parquet/npy)
+processed_dir: "data/processed"
+
+# Directory where all experiment results are written
+results_dir: "results"
+
+# Evaluation settings
+evaluation:
+  n_splits: 5            # GroupKFold splits for CV by subject
+  random_state: 42       # Global seed for reproducibility
+  scoring: "accuracy"    # Primary scoring metric for CV
+
+# Models to run (keys must match registry in src/models.py)
+models:
+  - random_forest
+  - logistic_regression
+  - linear_svm
+  - knn
+
+# Feature pipelines to run
+pipelines:
+  - baseline_561
+  - interpretable
+  - tsfresh
+
+# Interpretable feature extraction settings
+interpretable:
+  include_frequency: true    # Whether to include FFT-based features
+  sampling_rate: 50          # Hz
+
+# tsfresh settings
+tsfresh:
+  extraction_settings: "efficient"   # "minimal", "efficient", or "comprehensive"
+  nan_threshold: 0.5                 # Drop columns with >50% NaN
+  impute_remaining: true             # Impute remaining NaNs with column median

@@ -16,10 +16,11 @@ results/
 # Jupyter (si usas)
 .ipynb_checkpoints/
 
-# VSCode
+# VSCode / IDE
 .vscode/
+.idea/
 
-# Datos (NO subir datasets)
+# Datos (NO subir datasets ni features procesadas)
 DataSets/
 datasets/
 data/
@@ -27,5 +28,14 @@ data/
 *.csv
 *.npy
 
+# Parquet (feature caches)
+*.parquet
+
 # Logs
 *.log
+
+# Temporary / OS
+*.swp
+*.swo
+*~
+Thumbs.db

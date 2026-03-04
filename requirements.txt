@@ -1,4 +1,12 @@
+# Core dependencies
 numpy
 pandas
 scikit-learn
 matplotlib
+scipy
+pyarrow        # for parquet I/O
+pyyaml         # for config.yaml parsing
+
+# Optional: brute-force feature extraction
+# Install separately if needed: pip install tsfresh
+# tsfresh
