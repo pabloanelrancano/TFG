@@ -1,7 +1,5 @@
 # Linear SVM Baseline - Pablo Anel Rancano
 
-# src/Linear_SVM_Baseline.py
-
 from sklearn.svm import LinearSVC
 
 from dataset_loader import evaluate_model_baseline

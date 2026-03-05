@@ -1,9 +1,6 @@
 # src/config.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Loads config from config.yaml and allows CLI overrides.
-All other modules call get_config() to get paths and parameters.
-"""
+"""Load config.yaml and provide CLI override helpers."""
 
 from __future__ import annotations
 
@@ -21,7 +18,7 @@ def _parse_yaml_simple(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(f)
 
 
-# Defaults used when config.yaml is missing
+# Defaults (used if config.yaml is missing)
 _DEFAULTS: Dict[str, Any] = {
     "dataset_path": "../DataSets/human+activity+recognition+using+smartphones/UCI HAR Dataset/UCI HAR Dataset",
     "processed_dir": "data/processed",

@@ -1,12 +1,6 @@
 # src/generate_report.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Reads all summary_*.csv files from results/ subfolders and combines them
-into a single comparison report (CSV + Markdown).
-
-Usage:
-  python src/generate_report.py
-"""
+"""Combine per-pipeline summary CSVs into a global comparison report."""
 
 from __future__ import annotations
 
@@ -21,13 +15,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
 def find_summary_csvs(results_dir: Path) -> List[Path]:
-    """Find all summary_*.csv files in the results hierarchy."""
+    """Find all summary_*.csv in results/."""
     csvs = sorted(results_dir.rglob("summary_*.csv"))
     return csvs
 
 
 def load_and_tag(csv_path: Path) -> pd.DataFrame:
-    """Load a summary CSV and add a Pipeline column from the parent dir name."""
+    """Load a summary CSV and tag it with the pipeline name."""
     df = pd.read_csv(csv_path)
     pipeline = csv_path.parent.name
     if pipeline == csv_path.parent.name:
@@ -37,7 +31,7 @@ def load_and_tag(csv_path: Path) -> pd.DataFrame:
 
 
 def generate_comparison_report(results_dir: Path) -> None:
-    """Build the global comparison report from all pipeline summaries."""
+    """Build global comparison (CSV + Markdown) from pipeline summaries."""
     csvs = find_summary_csvs(results_dir)
 
     if not csvs:

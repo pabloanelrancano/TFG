@@ -1,9 +1,6 @@
 # src/models.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Central registry of the 4 models used in the project.
-Each entry maps a name to a factory function, a display tag, and a file prefix.
-"""
+"""Central registry of the 4 classifiers (factory, tag, file prefix)."""
 
 from __future__ import annotations
 

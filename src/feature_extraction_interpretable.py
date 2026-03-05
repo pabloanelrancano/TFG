@@ -1,12 +1,6 @@
 # src/feature_extraction_interpretable.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Extracts a compact set of interpretable features from raw inertial signals.
-
-Per channel (9 channels): 13 time-domain + 5 frequency-domain features.
-Plus 3 magnitude vectors with the same features, and 9 axis-pair correlations.
-Total: ~225 features per window.
-"""
+"""Extract ~225 interpretable features per window from raw inertial signals."""
 
 from __future__ import annotations
 
@@ -25,7 +19,7 @@ FS = 50  # sampling rate in Hz
 
 
 def _time_domain_features(signal: np.ndarray) -> Dict[str, float]:
-    """Compute 13 time-domain features for a single 128-sample window."""
+    """13 time-domain features for one window."""
     n = len(signal)
     features: Dict[str, float] = {}
 
@@ -54,7 +48,7 @@ def _time_domain_features(signal: np.ndarray) -> Dict[str, float]:
 
 
 def _frequency_domain_features(signal: np.ndarray, fs: int = FS) -> Dict[str, float]:
-    """Compute 5 frequency-domain features via FFT."""
+    """5 frequency-domain features via FFT."""
     n = len(signal)
     features: Dict[str, float] = {}
 
@@ -160,7 +154,7 @@ def extract_interpretable_features(
     fs: int = FS,
     verbose: bool = True,
 ) -> pd.DataFrame:
-    """Extract interpretable features for all windows. Returns a DataFrame (one row per window)."""
+    """Extract features for all windows. Returns DataFrame (one row per window)."""
     n_windows = next(iter(signals.values())).shape[0]
     all_rows: List[Dict[str, float]] = []
 

@@ -1,7 +1,5 @@
 # KNN Baseline - Pablo Anel Rancano
 
-# src/KNN_Baseline.py
-
 from sklearn.neighbors import KNeighborsClassifier
 
 from dataset_loader import evaluate_model_baseline

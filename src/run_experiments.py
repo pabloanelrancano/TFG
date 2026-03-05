@@ -1,14 +1,6 @@
 # src/run_experiments.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Main entry point to run all experiments. Supports three feature pipelines
-(baseline_561, interpretable, tsfresh) and four models (RF, LR, SVM, KNN).
-
-Usage:
-  python src/run_experiments.py                              # all pipelines, all models
-  python src/run_experiments.py --pipelines baseline_561     # just baseline
-  python src/run_experiments.py --pipelines tsfresh --normalize
-"""
+"""Experiment runner: evaluates pipelines x models and writes result summaries."""
 
 from __future__ import annotations
 
@@ -29,7 +21,7 @@ from evaluation import evaluate_model, write_summary_table
 
 
 def _load_baseline_561(cfg: Dict[str, Any]):
-    """Load the original 561-feature matrices straight from the dataset."""
+    """Load original 561-feature matrices."""
     ds = dataset_path(cfg)
     X_train, y_train, sub_train = load_split("train", ds)
     X_test, y_test, _ = load_split("test", ds)
@@ -37,7 +29,7 @@ def _load_baseline_561(cfg: Dict[str, Any]):
 
 
 def _load_interpretable(cfg: Dict[str, Any]):
-    """Load interpretable features from cached parquets (must be extracted first)."""
+    """Load cached interpretable features (parquet)."""
     proc = processed_dir(cfg)
     ds = dataset_path(cfg)
 
@@ -57,7 +49,7 @@ def _load_interpretable(cfg: Dict[str, Any]):
 
 
 def _load_tsfresh(cfg: Dict[str, Any]):
-    """Load tsfresh features from cached parquets (must be extracted first)."""
+    """Load cached tsfresh features (parquet)."""
     proc = processed_dir(cfg)
     ds = dataset_path(cfg)
 
@@ -186,7 +178,7 @@ def main() -> None:
 
         all_pipeline_results[pipeline] = pipe_results
 
-    # If we ran multiple pipelines, also write a combined comparison
+    # Combined comparison across pipelines
     if len(all_pipeline_results) > 1:
         print(f"\n{'#'*70}")
         print(f"#  Global Comparison")

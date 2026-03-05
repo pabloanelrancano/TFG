@@ -1,12 +1,6 @@
 # src/feature_extraction_tsfresh.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Brute-force feature extraction using tsfresh.
-
-Converts the raw inertial signals to tsfresh's long format, extracts features
-channel by channel (to stay within 16 GB RAM), cleans NaN/Inf values, and
-saves the result as parquet with a cleaning report in the metadata JSON.
-"""
+"""Automated feature extraction via tsfresh (channel-by-channel, with NaN cleanup)."""
 
 from __future__ import annotations
 
@@ -48,10 +42,7 @@ def extract_tsfresh_features(
     n_jobs: int = 0,
     verbose: bool = True,
 ) -> pd.DataFrame:
-    """Extract features with tsfresh, one channel at a time to save memory.
-
-    Returns a DataFrame with one row per window and all extracted features as columns.
-    """
+    """Extract tsfresh features channel by channel. Returns DataFrame (one row per window)."""
     import gc
 
     try:
@@ -135,13 +126,7 @@ def report_and_clean_features(
     impute_remaining: bool = True,
     verbose: bool = True,
 ) -> Tuple[pd.DataFrame, Dict]:
-    """Clean NaN/Inf from tsfresh output. Steps:
-    1) Replace Inf with NaN
-    2) Drop columns with >nan_threshold fraction of NaN
-    3) Impute remaining NaNs with column median
-    4) Verify nothing is left
-    Returns (clean_df, report_dict).
-    """
+    """Clean NaN/Inf: drop high-NaN columns, impute rest. Returns (clean_df, report)."""
     report: Dict = {}
 
     n_inf = np.isinf(df.values).sum()
@@ -164,7 +149,7 @@ def report_and_clean_features(
               f"({100*n_nan_total/max(n_total_cells,1):.2f}%)")
         print(f"  [clean] Columns with >=1 NaN: {n_cols_with_nan}")
 
-    # Drop columns that are mostly NaN
+    # Drop mostly-NaN columns
     nan_fractions = nan_counts / df.shape[0]
     cols_to_drop = nan_fractions[nan_fractions > nan_threshold].index.tolist()
     report["n_cols_dropped"] = len(cols_to_drop)
@@ -206,7 +191,7 @@ def save_features(
     cleaning_report: Dict | None = None,
     tag: str = "tsfresh",
 ) -> Path:
-    """Save feature DataFrame as parquet + metadata JSON (includes cleaning stats)."""
+    """Save features as parquet + metadata JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
     parquet_path = output_dir / f"X_{split}_{tag}.parquet"

@@ -1,7 +1,5 @@
 # Logistic Regression Baseline - Pablo Anel Rancano
 
-# src/Logistic_Regression_Baseline.py
-
 from sklearn.linear_model import LogisticRegression
 
 from dataset_loader import evaluate_model_baseline

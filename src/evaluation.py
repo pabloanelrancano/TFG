@@ -1,11 +1,6 @@
 # src/evaluation.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Evaluation framework that works with any feature matrix.
-Does two things for each model:
-  A) Train on train, predict on official test, save metrics + confusion matrix.
-  B) GroupKFold CV by subject on the training set.
-"""
+"""Unified evaluation: official test metrics + GroupKFold CV by subject."""
 
 from __future__ import annotations
 
@@ -83,11 +78,7 @@ def evaluate_model(
     n_splits: int = 5,
     normalize: bool = False,
 ) -> Dict[str, Any]:
-    """Full evaluation: official test + GroupKFold CV by subject.
-
-    If normalize=True, fits a StandardScaler on train and transforms both splits.
-    Returns a dict with all the summary metrics (used for comparison tables).
-    """
+    """Official test + GroupKFold CV. Returns dict of summary metrics."""
     t0 = time.time()
 
     if normalize:
@@ -113,7 +104,7 @@ def evaluate_model(
     per_class_dict = {CLASS_LABELS[i]: round(float(per_class_f1[i]), 4)
                       for i in range(len(CLASS_IDS))}
 
-    # B) GroupKFold CV on train (by subject, no leakage)
+    # B) GroupKFold CV by subject
     from sklearn.base import clone
     model_cv = clone(model)
 
@@ -126,7 +117,6 @@ def evaluate_model(
 
     elapsed = time.time() - t0
 
-    # Save metrics to text file
     lines = [
         f"MODEL: {model_tag}",
         f"Pipeline prefix: {results_prefix}",

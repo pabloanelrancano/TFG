@@ -1,10 +1,6 @@
 # src/dataset_loader.py
 # Pablo Anel Rancano - TFG HAR
-"""
-Loads the UCI HAR 561-feature tabular data (X, y, subjects) for train/test.
-Also keeps the legacy evaluate_model_baseline() so the old per-model scripts
-still work without changes.
-"""
+"""Load UCI HAR tabular split (561 features) and provide legacy baseline eval."""
 
 from __future__ import annotations
 
@@ -20,7 +16,7 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from sklearn.model_selection import GroupKFold, cross_val_score
 
 
-# Default dataset path (works when running from project/ root)
+# Default dataset path
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DATASET_PATH = Path(
@@ -28,8 +24,6 @@ DATASET_PATH = Path(
     "UCI HAR Dataset/UCI HAR Dataset"
 )
 
-# Try to grab the path from config.yaml if available.
-# Falls back silently to the hardcoded default above.
 try:
     from config import get_config
     _cfg = get_config()
@@ -54,7 +48,7 @@ CLASS_LABELS: List[str] = [ACTIVITY_NAMES[i] for i in CLASS_IDS]
 
 
 def assert_dataset_exists(dataset_path: Path = DATASET_PATH) -> None:
-    """Raise FileNotFoundError with a helpful message if the dataset dir is missing."""
+    """Raise FileNotFoundError if dataset path is missing."""
     if not dataset_path.exists():
         raise FileNotFoundError(
             f"Dataset not found:\n  {dataset_path.resolve()}\n\n"
@@ -120,11 +114,7 @@ def evaluate_model_baseline(
     dataset_path: Path = DATASET_PATH,
     n_splits: int = 5,
 ) -> None:
-    """Legacy evaluation: train on train, test on official test, plus GroupKFold CV.
-
-    Kept for backward compat with the original per-model baseline scripts.
-    For new experiments use evaluation.evaluate_model() instead.
-    """
+    """Legacy eval for old baseline scripts: official test + GroupKFold CV."""
     assert_dataset_exists(dataset_path)
 
     X_train, y_train, subjects_train = load_split("train", dataset_path)

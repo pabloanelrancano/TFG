@@ -1,7 +1,5 @@
 # Random Forest Baseline - Pablo Anel Rancano
 
-# src/Random_Forest_Baseline.py
-
 from sklearn.ensemble import RandomForestClassifier
 
 from dataset_loader import evaluate_model_baseline
