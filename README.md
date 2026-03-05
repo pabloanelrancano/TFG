@@ -34,7 +34,6 @@ project/
     feature_extraction_tsfresh.py
     run_experiments.py        # Ejecutor principal de experimentos
     generate_report.py        # Genera informe comparativo global
-    fuzzy_placeholder.py      # Stubs para fase futura (metodos difusos)
     *_Baseline.py             # Scripts legacy (uno por modelo)
   data/processed/             # Cache de features extraidas (gitignored)
   results/                    # Resultados de experimentos (gitignored)
