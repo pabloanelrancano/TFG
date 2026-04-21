@@ -13,6 +13,9 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# Keep in sync with ``run_experiments._FROZEN_COMPARISON_PIPELINES``.
+_FROZEN_COMPARISON_PIPELINES = frozenset({"baseline_561", "interpretable", "tsfresh"})
+
 
 def find_summary_csvs(results_dir: Path) -> List[Path]:
     """Find all summary_*.csv in results/."""
@@ -56,11 +59,17 @@ def generate_comparison_report(results_dir: Path) -> None:
         ["Test Accuracy"], ascending=False
     ).reset_index(drop=True)
 
-    csv_out = results_dir / "comparison_all_pipelines.csv"
+    found_pipelines = sorted({c.parent.name for c in csvs})
+    if frozenset(found_pipelines) == _FROZEN_COMPARISON_PIPELINES:
+        cmp_stem = "comparison_all_pipelines"
+    else:
+        cmp_stem = "comparison_pipelines_" + "_".join(found_pipelines)
+
+    csv_out = results_dir / f"{cmp_stem}.csv"
     combined.to_csv(csv_out, index=False)
     print(f"\nCSV -> {csv_out}")
 
-    md_out = results_dir / "comparison_all_pipelines.md"
+    md_out = results_dir / f"{cmp_stem}.md"
     lines = [
         "# TFG HAR – Cross-Pipeline Comparison Report",
         "",

@@ -39,6 +39,9 @@ _DEFAULTS: Dict[str, Any] = {
         "nan_threshold": 0.5,
         "impute_remaining": True,
     },
+    "tsfeatures_r": {
+        "rscript_path": "Rscript",
+    },
 }
 
 _config: Optional[Dict[str, Any]] = None

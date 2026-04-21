@@ -35,3 +35,7 @@ tsfresh:
   extraction_settings: "efficient"
   nan_threshold: 0.5
   impute_remaining: true
+
+# R tsfeatures — additive branch only (not in pipelines: above; run with --pipelines tsfeatures_r)
+tsfeatures_r:
+  rscript_path: "Rscript"

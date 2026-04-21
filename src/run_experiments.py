@@ -19,6 +19,9 @@ from dataset_loader import load_split, assert_dataset_exists
 from models import get_model, get_model_tag, get_model_prefix, list_models, MODEL_REGISTRY
 from evaluation import evaluate_model, write_summary_table
 
+# Global comparison filename: ``comparison_all_pipelines`` only for this exact set.
+_FROZEN_COMPARISON_PIPELINES = frozenset({"baseline_561", "interpretable", "tsfresh"})
+
 
 def _load_baseline_561(cfg: Dict[str, Any]):
     """Load original 561-feature matrices."""
@@ -79,10 +82,39 @@ def _load_tsfresh(cfg: Dict[str, Any]):
     return X_train_df.values, y_train, sub_train, X_test_df.values, y_test
 
 
+def _load_tsfeatures_r(cfg: Dict[str, Any]):
+    """Load cached R tsfeatures_r parquet; y/subjects from official split (row order)."""
+    proc = processed_dir(cfg)
+    ds = dataset_path(cfg)
+
+    try:
+        from feature_extraction_tsfeatures_r import load_features
+        X_train_df = load_features("train", proc, tag="tsfeatures_r")
+        X_test_df = load_features("test", proc, tag="tsfeatures_r")
+    except FileNotFoundError as e:
+        print("\nERROR: tsfeatures_r cache not found. Extract first:")
+        print("   python src/feature_extraction_tsfeatures_r.py")
+        raise SystemExit(1) from e
+
+    _, y_train, sub_train = load_split("train", ds)
+    _, y_test, _ = load_split("test", ds)
+
+    train_cols = set(X_train_df.columns)
+    test_cols = set(X_test_df.columns)
+    common_cols = sorted(train_cols & test_cols)
+    if len(common_cols) < len(train_cols) or len(common_cols) < len(test_cols):
+        print(f"  [tsfeatures_r] Aligning columns: keeping {len(common_cols)}")
+    X_train_df = X_train_df[common_cols]
+    X_test_df = X_test_df[common_cols]
+
+    return X_train_df.values, y_train, sub_train, X_test_df.values, y_test
+
+
 PIPELINE_LOADERS = {
     "baseline_561": _load_baseline_561,
     "interpretable": _load_interpretable,
     "tsfresh": _load_tsfresh,
+    "tsfeatures_r": _load_tsfeatures_r,
 }
 
 
@@ -191,7 +223,11 @@ def main() -> None:
                 row["pipeline"] = pipeline
                 all_rows.append(row)
 
-        _write_global_comparison(all_rows, base_results)
+        _write_global_comparison(
+            all_rows,
+            base_results,
+            pipelines_run=list(all_pipeline_results.keys()),
+        )
 
     total_elapsed = time.time() - total_t0
     print(f"\n{'='*70}")
@@ -203,8 +239,9 @@ def main() -> None:
 def _write_global_comparison(
     all_rows: List[Dict[str, Any]],
     output_dir: Path,
+    pipelines_run: List[str],
 ) -> None:
-    """Write a cross-pipeline comparison table (CSV + Markdown)."""
+    """Write cross-pipeline comparison: frozen trio → ``comparison_all_pipelines``; else slugged file."""
     import pandas as pd
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -224,11 +261,16 @@ def _write_global_comparison(
 
     df = pd.DataFrame(rows)
 
-    csv_path = output_dir / "comparison_all_pipelines.csv"
+    if frozenset(pipelines_run) == _FROZEN_COMPARISON_PIPELINES:
+        cmp_stem = "comparison_all_pipelines"
+    else:
+        cmp_stem = "comparison_pipelines_" + "_".join(sorted(pipelines_run))
+
+    csv_path = output_dir / f"{cmp_stem}.csv"
     df.to_csv(csv_path, index=False)
     print(f"  Global CSV -> {csv_path}")
 
-    md_path = output_dir / "comparison_all_pipelines.md"
+    md_path = output_dir / f"{cmp_stem}.md"
     lines = [
         "# Cross-Pipeline Comparison",
         "",
