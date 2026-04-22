@@ -2,7 +2,7 @@
 
 Supervised comparison of per-window sensor representations on the UCI HAR benchmark, with subject-aware evaluation and reproducible code.
 
-**Final degree project** — Pablo Anel Rancano — University of Granada
+**TFG** — Pablo Anel Rancano — University of Granada
 
 ---
 
