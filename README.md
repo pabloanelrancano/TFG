@@ -1,99 +1,127 @@
-# TFG -- Reconocimiento de Actividades Humanas (HAR)
+# TFG — Reconocimiento de actividades humanas (HAR)
 
-Comparacion de modelos supervisados para el reconocimiento de actividades cotidianas a partir de datos de acelerometros.
+Comparación supervisada de representaciones de ventanas inerciales (UCI HAR) con clasificadores clásicos, evaluación por sujeto y documentación reproducible del código.
 
-Trabajo Fin de Grado -- Pablo Anel Rancano -- Universidad de Granada
-
----
-
-## Que hace este proyecto
-
-Compara tres formas de representar datos de sensores inerciales (acelerometro y giroscopio) del dataset UCI HAR (30 sujetos, 6 actividades, 50 Hz) y las evalua con cuatro clasificadores clasicos.
-
-- **Baseline (561 features):** las features originales del dataset UCI HAR.
-- **Interpretable (~225 features):** features de tiempo y frecuencia extraidas a mano desde las senales crudas.
-- **tsfresh (~5700 features):** extraccion automatica masiva con la libreria tsfresh.
-- Cuatro modelos: Random Forest, Logistic Regression, Linear SVM y k-NN.
-- Evaluacion sin data leakage: split oficial por sujeto + GroupKFold CV por sujeto.
+**Trabajo Fin de Grado** — Pablo Anel Rancano — Universidad de Granada
 
 ---
 
-## Estructura del proyecto
+## Visión general del proyecto
+
+El repositorio contiene el código para cargar el **UCI HAR Dataset**, construir matrices de características por ventana (50 Hz, ventanas de 128 muestras), y evaluar **cuatro modelos** (Random Forest, regresión logística, SVM lineal, k-NN) con el **split oficial** test y **validación cruzada GroupKFold por sujeto** en entrenamiento, sin mezclar sujetos entre train y test.
+
+La configuración vive en `config.yaml`; el punto de entrada unificado de experimentos es `src/run_experiments.py`.
+
+---
+
+## Estudio núcleo (congelado): tres pipelines
+
+El **estudio principal del repositorio** (núcleo experimental del TFG) se basa **únicamente** en estos tres pipelines:
+
+| Pipeline | Descripción breve |
+|----------|-------------------|
+| **baseline_561** | 561 características precomputadas del propio UCI HAR. |
+| **interpretable** | Características de dominio (~225) extraídas en Python desde las señales crudas. |
+| **tsfresh** | Extracción automática de alto volumen (**~5724** columnas finales tras alinear train/test y depurar columnas con muchos NaN) con la librería **tsfresh**. |
+
+En `config.yaml`, la lista `pipelines:` por defecto incluye **solo** estos tres nombres. Ejecutar `python src/run_experiments.py` sin `--pipelines` recorre ese núcleo.
+
+---
+
+## Extensión opcional: `tsfeatures_r`
+
+`tsfeatures_r` es un **experimento aditivo** (rama de trabajo), no parte del trío congelado:
+
+- Usa **R** con el paquete CRAN **`tsfeatures`**: llamada por defecto a `tsfeatures()` **por canal** (9 canales inerciales), una serie univariante de longitud 128 por ventana, sin familias extra de características en el driver R.
+- **No** está en la lista por defecto `pipelines:` de `config.yaml`; hay que invocarlo **explícitamente**:  
+  `python src/run_experiments.py --pipelines tsfeatures_r`
+- Código: `src/feature_extraction_tsfeatures_r.py` y `src/r/tsfeatures_extract.R`. Caché: `data/processed/X_{train,test}_tsfeatures_r.parquet`. Resultados: `results/tsfeatures_r/`.
+- Requisitos: **`Rscript`** accesible (PATH o ruta con `--rscript` / `tsfeatures_r.rscript_path` en `config.yaml`) y el paquete CRAN **`tsfeatures`** instalado para ese intérprete R.
+
+---
+
+## Política de ficheros de comparación global
+
+Al agrupar **varios** pipelines en una misma ejecución de `run_experiments.py` o al regenerar tablas con `generate_report.py`:
+
+- Si el conjunto de pipelines es **exactamente** `{baseline_561, interpretable, tsfresh}`, los agregados se escriben como  
+  **`results/comparison_all_pipelines.csv`** y **`results/comparison_all_pipelines.md`**.
+- Si interviene **`tsfeatures_r`** u otro pipeline de extensión, o el conjunto no coincide con ese trío, los agregados van a  
+  **`results/comparison_pipelines_<nombres_ordenados>.csv`** y **`.md`** (mismo criterio de nombres ordenados), para no sobrescribir el comparativo del núcleo con mezclas accidentales.
+
+Con un solo pipeline no se genera comparativa global multi-pipeline.
+
+---
+
+## Estructura del repositorio
 
 ```
 project/
-  config.yaml                 # Configuracion (rutas, parametros)
-  requirements.txt            # Dependencias Python
+  config.yaml
+  requirements.txt
+  README.md
   src/
-    config.py                 # Carga de configuracion
-    dataset_loader.py         # Carga de datos tabulares UCI HAR (561 features)
-    inertial_loader.py        # Carga de senales inerciales crudas (9 canales)
-    models.py                 # Registro de modelos (RF, LR, SVM, KNN)
-    evaluation.py             # Evaluacion unificada (test + CV)
+    config.py
+    dataset_loader.py
+    inertial_loader.py
+    models.py
+    evaluation.py
     feature_extraction_interpretable.py
     feature_extraction_tsfresh.py
-    run_experiments.py        # Ejecutor principal de experimentos
-    generate_report.py        # Genera informe comparativo global
-    *_Baseline.py             # Scripts legacy (uno por modelo)
-  data/processed/             # Cache de features extraidas (gitignored)
-  results/                    # Resultados de experimentos (gitignored)
+    feature_extraction_tsfeatures_r.py   # extensión R tsfeatures_r
+    r/tsfeatures_extract.R                # driver R (tsfeatures por ventana/canal)
+    run_experiments.py
+    generate_report.py
+    *_Baseline.py                         # evaluación legacy, un script por modelo (previos al runner unificado)
+  data/processed/                        # cachés parquet (gitignored)
+  results/                               # salidas por pipeline (gitignored)
     baseline_561/
     interpretable/
     tsfresh/
-    comparison_all_pipelines.csv
-    comparison_all_pipelines.md
+    tsfeatures_r/                        # solo si se ejecuta la extensión
 ```
+
+`results/`, `data/` y `.venv/` están en `.gitignore`; las salidas son locales.
 
 ---
 
 ## Dataset
 
-El proyecto necesita el **UCI HAR Dataset**. La ruta se configura en `config.yaml`:
+Descargar el **UCI HAR Dataset** y fijar la ruta en `config.yaml` (`dataset_path`). Cada split debe incluir `X_*.txt`, `y_*.txt`, `subject_*.txt` e `Inertial Signals/`.
 
-```yaml
-dataset_path: "../DataSets/human+activity+recognition+using+smartphones/UCI HAR Dataset/UCI HAR Dataset"
-```
-
-La carpeta debe contener `train/` y `test/`, cada una con `X_*.txt`, `y_*.txt`, `subject_*.txt` e `Inertial Signals/`.
-
-Se puede cambiar la ruta por CLI: `python src/run_experiments.py --dataset-path /otra/ruta`
+Sobrescritura por CLI:  
+`python src/run_experiments.py --dataset-path /ruta/al/UCI HAR Dataset`
 
 ---
 
-## Setup
+## Configuración (entorno Python)
 
 ```bash
 cd project/
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-tsfresh es una dependencia opcional (solo necesaria para el pipeline tsfresh):
+**tsfresh** (solo para el pipeline `tsfresh`):  
+`pip install tsfresh`
 
-```bash
-pip install tsfresh
-```
+**Extensión `tsfeatures_r`:** además, **R** con **`tsfeatures`** instalado para el mismo **`Rscript`** que usará la extracción.
 
 ---
 
-## Como ejecutar
+## Comandos principales
+
+**Núcleo (tres pipelines)** — los dos primeros comandos solo hacen falta **si no existen ya** los parquet en `data/processed/` (p. ej. `X_train_interpretable.parquet`, `X_train_tsfresh.parquet`); si las cachés están presentes, puede omitirse la extracción y ejecutarse directamente `run_experiments.py`.
 
 ```bash
-# 1. Extraer features interpretables (una vez, ~2-5 min)
 python src/feature_extraction_interpretable.py
-
-# 2. Extraer features tsfresh (una vez, ~10-30 min, requiere tsfresh)
 python src/feature_extraction_tsfresh.py
-
-# 3. Ejecutar todos los modelos en todos los pipelines
 python src/run_experiments.py
-
-# 4. Generar informe comparativo
 python src/generate_report.py
 ```
 
-Para ejecutar solo un pipeline o modelo concreto:
+**Solo un pipeline o modelo** (ejemplos):
 
 ```bash
 python src/run_experiments.py --pipelines baseline_561
@@ -101,19 +129,27 @@ python src/run_experiments.py --pipelines interpretable --models random_forest k
 python src/run_experiments.py --normalize
 ```
 
+**Extensión `tsfeatures_r`** (extracción una vez; entrenamiento cuando proceda):
+
+```bash
+python src/feature_extraction_tsfeatures_r.py --rscript /usr/bin/Rscript
+python src/run_experiments.py --pipelines tsfeatures_r
+```
+
+**Varios pipelines incluyendo extensión** (comparativa con nombre slug, ver sección anterior):
+
+```bash
+python src/run_experiments.py --pipelines baseline_561 interpretable tsfresh tsfeatures_r
+```
+
 ---
 
-## Outputs
+## Salidas
 
-Cada experimento genera en `results/<pipeline>/`:
+Por pipeline, en `results/<nombre_pipeline>/`:
 
-- `*_metrics.txt` -- accuracy, F1, classification report, resultados de CV
-- `*_confusion_test.png` -- matriz de confusion
-- `summary_*.csv` / `summary_*.md` -- tabla resumen del pipeline
+- `*_metrics.txt` — métricas en test, informe por clase, CV por sujeto
+- `*_confusion_test.png` — matriz de confusión
+- `summary_<pipeline>.csv` / `.md` — tabla resumen del pipeline
 
-El informe global esta en:
-
-- `results/comparison_all_pipelines.csv`
-- `results/comparison_all_pipelines.md`
-
-Los datos procesados (features extraidas) se guardan en `data/processed/` como archivos parquet. Tanto `results/` como `data/processed/` estan en `.gitignore` y se generan localmente.
+Comparativas globales: ver **Política de ficheros de comparación global** arriba. Las características en caché viven en `data/processed/` (parquet + metadatos JSON cuando aplica).
