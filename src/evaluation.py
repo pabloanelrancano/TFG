@@ -182,7 +182,6 @@ def write_summary_table(
             "Test F1 (weighted)": r["test_f1_weighted"],
             "CV Mean": r["cv_mean"],
             "CV Std": r["cv_std"],
-            "Time (s)": r["elapsed_s"],
         }
         for cls, f1 in r["per_class_f1"].items():
             row[f"F1_{cls}"] = f1
@@ -203,8 +202,10 @@ def _write_markdown_table(df: pd.DataFrame, path: Path, title: str) -> None:
     """Write a DataFrame as a Markdown table."""
     lines = [f"# Summary: {title}", ""]
 
-    core_cols = ["Model", "Features", "Test Accuracy", "Test F1 (macro)",
-                 "CV Mean", "CV Std", "Time (s)"]
+    core_cols = [
+        "Model", "Features", "Test Accuracy", "Test F1 (macro)",
+        "Test F1 (weighted)", "CV Mean", "CV Std",
+    ]
     core_cols = [c for c in core_cols if c in df.columns]
     df_core = df[core_cols]
 
