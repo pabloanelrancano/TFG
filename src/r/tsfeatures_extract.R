@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Default tsfeatures::tsfeatures() only — one matrix per channel (rows = windows, cols = 128).
+# Default tsfeatures::tsfeatures() only — per channel, one list element per window (length 128).
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 3L) {
@@ -30,7 +30,14 @@ for (ch in channels) {
     stop("Expected 128 samples per window for channel ", ch, "; got ", ncol(M))
   }
 
-  feat <- tsfeatures::tsfeatures(M)
+  n_win <- nrow(M)
+  tslist <- vector("list", n_win)
+  for (i in seq_len(n_win)) {
+    # One univariate series per row; order follows row index 1..n_win
+    tslist[[i]] <- stats::ts(as.numeric(M[i, ]), start = 1, frequency = 1)
+  }
+
+  feat <- tsfeatures::tsfeatures(tslist)
   feat <- as.data.frame(feat)
   colnames(feat) <- paste(ch, colnames(feat), sep = "__")
 

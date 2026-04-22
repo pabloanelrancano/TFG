@@ -41,7 +41,7 @@ def _run_tsfeatures_r(
     rscript: str,
     verbose: bool = True,
 ) -> pd.DataFrame:
-    """Call R once per split: default tsfeatures(M) per channel, cbind columns."""
+    """Call R once per split: per channel, list of ts (one per window); default tsfeatures(), cbind."""
     driver = _r_driver_path()
     if not driver.is_file():
         raise FileNotFoundError(f"R driver script not found: {driver}")
