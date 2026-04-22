@@ -1,59 +1,70 @@
-# TFG — Reconocimiento de actividades humanas (HAR)
+# TFG — Human Activity Recognition (HAR)
 
-Comparación supervisada de representaciones de ventanas inerciales (UCI HAR) con clasificadores clásicos, evaluación por sujeto y documentación reproducible del código.
+Supervised comparison of per-window sensor representations on the UCI HAR benchmark, with subject-aware evaluation and reproducible code.
 
-**Trabajo Fin de Grado** — Pablo Anel Rancano — Universidad de Granada
-
----
-
-## Visión general del proyecto
-
-El repositorio contiene el código para cargar el **UCI HAR Dataset**, construir matrices de características por ventana (50 Hz, ventanas de 128 muestras), y evaluar **cuatro modelos** (Random Forest, regresión logística, SVM lineal, k-NN) con el **split oficial** test y **validación cruzada GroupKFold por sujeto** en entrenamiento, sin mezclar sujetos entre train y test.
-
-La configuración vive en `config.yaml`; el punto de entrada unificado de experimentos es `src/run_experiments.py`.
+**Final degree project** — Pablo Anel Rancano — University of Granada
 
 ---
 
-## Estudio núcleo (congelado): tres pipelines
+## Project overview
 
-El **estudio principal del repositorio** (núcleo experimental del TFG) se basa **únicamente** en estos tres pipelines:
+This repository contains the code to load the **UCI HAR Dataset**, build per-window feature matrices (50 Hz, 128-sample windows), and evaluate four classical classifiers:
 
-| Pipeline | Descripción breve |
-|----------|-------------------|
-| **baseline_561** | 561 características precomputadas del propio UCI HAR. |
-| **interpretable** | Características de dominio (~225) extraídas en Python desde las señales crudas. |
-| **tsfresh** | Extracción automática de alto volumen (**~5724** columnas finales tras alinear train/test y depurar columnas con muchos NaN) con la librería **tsfresh**. |
+- Random Forest  
+- Logistic Regression  
+- Linear SVM  
+- k-NN  
 
-En `config.yaml`, la lista `pipelines:` por defecto incluye **solo** estos tres nombres. Ejecutar `python src/run_experiments.py` sin `--pipelines` recorre ese núcleo.
+Models are trained and scored on the **official train/test split**, with **GroupKFold cross-validation by subject** on the training set so that subjects are not mixed between train and test folds.
 
----
-
-## Extensión opcional: `tsfeatures_r`
-
-`tsfeatures_r` es un **experimento aditivo** (rama de trabajo), no parte del trío congelado:
-
-- Usa **R** con el paquete CRAN **`tsfeatures`**: llamada por defecto a `tsfeatures()` **por canal** (9 canales inerciales), una serie univariante de longitud 128 por ventana, sin familias extra de características en el driver R.
-- **No** está en la lista por defecto `pipelines:` de `config.yaml`; hay que invocarlo **explícitamente**:  
-  `python src/run_experiments.py --pipelines tsfeatures_r`
-- Código: `src/feature_extraction_tsfeatures_r.py` y `src/r/tsfeatures_extract.R`. Caché: `data/processed/X_{train,test}_tsfeatures_r.parquet`. Resultados: `results/tsfeatures_r/`.
-- Requisitos: **`Rscript`** accesible (PATH o ruta con `--rscript` / `tsfeatures_r.rscript_path` en `config.yaml`) y el paquete CRAN **`tsfeatures`** instalado para ese intérprete R.
+Configuration lives in `config.yaml`. The unified experiment entry point is `src/run_experiments.py`.
 
 ---
 
-## Política de ficheros de comparación global
+## Initial study: three pipelines
 
-Al agrupar **varios** pipelines en una misma ejecución de `run_experiments.py` o al regenerar tablas con `generate_report.py`:
+The main, default study uses **only** these three pipelines:
 
-- Si el conjunto de pipelines es **exactamente** `{baseline_561, interpretable, tsfresh}`, los agregados se escriben como  
-  **`results/comparison_all_pipelines.csv`** y **`results/comparison_all_pipelines.md`**.
-- Si interviene **`tsfeatures_r`** u otro pipeline de extensión, o el conjunto no coincide con ese trío, los agregados van a  
-  **`results/comparison_pipelines_<nombres_ordenados>.csv`** y **`.md`** (mismo criterio de nombres ordenados), para no sobrescribir el comparativo del núcleo con mezclas accidentales.
+| Pipeline | Description |
+|----------|-------------|
+| **baseline_561** | 561 precomputed features provided by the UCI HAR dataset. |
+| **interpretable** | 225 hand-crafted time- and frequency-domain features extracted in Python from raw inertial windows (see cached metadata under `data/processed/` when present). |
+| **tsfresh** | High-volume automated extraction with **tsfresh**; about **5724** columns after aligning train/test columns and dropping columns with a high fraction of NaNs. |
 
-Con un solo pipeline no se genera comparativa global multi-pipeline.
+The default `pipelines:` list in `config.yaml` contains **only** these three names. Running `python src/run_experiments.py` without `--pipelines` evaluates that set.
 
 ---
 
-## Estructura del repositorio
+## Optional extension: `tsfeatures_r`
+
+`tsfeatures_r` is an **additive** experiment (an attempted improvement on a separate branch). It is **not** part of the default three-pipeline core.
+
+It uses **R** and the CRAN package **`tsfeatures`**. For each of the **nine** inertial channels, the driver applies the **default** `tsfeatures()` call to a list where **each window is one univariate series of length 128**; no extra feature families are added in the R script. The first matrix-based call was corrected so that R receives **one time series per window**, not a layout that swapped the window axis with the time axis.
+
+`tsfeatures_r` is **not** listed under default `pipelines:` in `config.yaml`; invoke it explicitly, for example:
+
+`python src/run_experiments.py --pipelines tsfeatures_r`
+
+**Code:** `src/feature_extraction_tsfeatures_r.py`, `src/r/tsfeatures_extract.R`  
+**Feature cache:** `data/processed/X_train_tsfeatures_r.parquet`, `data/processed/X_test_tsfeatures_r.parquet`  
+**Run outputs:** `results/tsfeatures_r/`
+
+**Requirements:** `Rscript` on your PATH or passed with `--rscript` (or `tsfeatures_r.rscript_path` in `config.yaml`), and the CRAN package `tsfeatures` installed for that R interpreter.
+
+---
+
+## Global comparison files
+
+When **more than one pipeline** is evaluated in a single `run_experiments.py` run, or when `generate_report.py` rebuilds a table from multiple pipeline summaries under `results/`:
+
+- If the pipeline set is **exactly** `baseline_561`, `interpretable`, and `tsfresh`, aggregated tables are written as `results/comparison_all_pipelines.csv` and `results/comparison_all_pipelines.md`.
+- In **any other** case—including runs that include `tsfeatures_r`, any future extension, or a strict subset of the core trio—aggregated tables use `results/comparison_pipelines_<sorted_pipeline_names>.csv` and `.md`.
+
+This naming rule avoids overwriting the core three-pipeline comparison with mixed or extension runs. **Single-pipeline** runs do **not** produce a multi-pipeline comparison file.
+
+---
+
+## Repository layout
 
 ```
 project/
@@ -68,51 +79,63 @@ project/
     evaluation.py
     feature_extraction_interpretable.py
     feature_extraction_tsfresh.py
-    feature_extraction_tsfeatures_r.py   # extensión R tsfeatures_r
-    r/tsfeatures_extract.R                # driver R (tsfeatures por ventana/canal)
+    feature_extraction_tsfeatures_r.py   # tsfeatures_r extension
+    r/tsfeatures_extract.R               # R driver for tsfeatures_r
     run_experiments.py
     generate_report.py
-    *_Baseline.py                         # evaluación legacy, un script por modelo (previos al runner unificado)
-  data/processed/                        # cachés parquet (gitignored)
-  results/                               # salidas por pipeline (gitignored)
+    *_Baseline.py                         # legacy per-model scripts (pre-unified runner)
+  data/processed/                        # feature caches (gitignored)
+  results/                               # experiment outputs (gitignored)
     baseline_561/
     interpretable/
     tsfresh/
-    tsfeatures_r/                        # solo si se ejecuta la extensión
+    tsfeatures_r/                        # present only if the extension is run
 ```
 
-`results/`, `data/` y `.venv/` están en `.gitignore`; las salidas son locales.
+`results/`, `data/`, and `.venv/` are listed in `.gitignore`; generated artifacts stay local unless you change ignore rules.
 
 ---
 
 ## Dataset
 
-Descargar el **UCI HAR Dataset** y fijar la ruta en `config.yaml` (`dataset_path`). Cada split debe incluir `X_*.txt`, `y_*.txt`, `subject_*.txt` e `Inertial Signals/`.
+Download the **UCI HAR Dataset** and set `dataset_path` in `config.yaml`. Each split should include `X_*.txt`, `y_*.txt`, `subject_*.txt`, and the `Inertial Signals/` tree.
 
-Sobrescritura por CLI:  
-`python src/run_experiments.py --dataset-path /ruta/al/UCI HAR Dataset`
+Override the dataset root from the CLI if needed:
+
+```bash
+python src/run_experiments.py --dataset-path /path/to/UCI HAR Dataset
+```
 
 ---
 
-## Configuración (entorno Python)
+## Environment setup
+
+Create a virtual environment, activate it, and install Python dependencies:
 
 ```bash
 cd project/
 python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**tsfresh** (solo para el pipeline `tsfresh`):  
-`pip install tsfresh`
+On Windows, activate with `.venv\Scripts\activate`.
 
-**Extensión `tsfeatures_r`:** además, **R** con **`tsfeatures`** instalado para el mismo **`Rscript`** que usará la extracción.
+The **tsfresh** pipeline requires the **tsfresh** package (not installed by default in `requirements.txt`):
+
+```bash
+pip install tsfresh
+```
+
+For **tsfeatures_r**, install **R**, ensure **`Rscript`** matches the path you pass to extraction, and install the CRAN package **`tsfeatures`** for that R.
 
 ---
 
-## Comandos principales
+## Main commands
 
-**Núcleo (tres pipelines)** — los dos primeros comandos solo hacen falta **si no existen ya** los parquet en `data/processed/` (p. ej. `X_train_interpretable.parquet`, `X_train_tsfresh.parquet`); si las cachés están presentes, puede omitirse la extracción y ejecutarse directamente `run_experiments.py`.
+Feature extraction steps are **only** required when the corresponding Parquet files are missing under `data/processed/` (for example `X_train_interpretable.parquet` or `X_train_tsfresh.parquet`). If caches already exist, skip straight to `run_experiments.py`.
+
+**Core three pipelines** — typical sequence:
 
 ```bash
 python src/feature_extraction_interpretable.py
@@ -121,7 +144,7 @@ python src/run_experiments.py
 python src/generate_report.py
 ```
 
-**Solo un pipeline o modelo** (ejemplos):
+**Subset runs** (examples):
 
 ```bash
 python src/run_experiments.py --pipelines baseline_561
@@ -129,14 +152,14 @@ python src/run_experiments.py --pipelines interpretable --models random_forest k
 python src/run_experiments.py --normalize
 ```
 
-**Extensión `tsfeatures_r`** (extracción una vez; entrenamiento cuando proceda):
+**Extension `tsfeatures_r`** — extract once, then evaluate:
 
 ```bash
 python src/feature_extraction_tsfeatures_r.py --rscript /usr/bin/Rscript
 python src/run_experiments.py --pipelines tsfeatures_r
 ```
 
-**Varios pipelines incluyendo extensión** (comparativa con nombre slug, ver sección anterior):
+**Mixed run** (writes a slugged comparison file; see *Global comparison files*):
 
 ```bash
 python src/run_experiments.py --pipelines baseline_561 interpretable tsfresh tsfeatures_r
@@ -144,12 +167,14 @@ python src/run_experiments.py --pipelines baseline_561 interpretable tsfresh tsf
 
 ---
 
-## Salidas
+## Outputs
 
-Por pipeline, en `results/<nombre_pipeline>/`:
+**Per pipeline** — after `run_experiments.py`, each pipeline has a folder `results/<pipeline>/` containing test metrics, confusion matrices, and a short summary table, for example:
 
-- `*_metrics.txt` — métricas en test, informe por clase, CV por sujeto
-- `*_confusion_test.png` — matriz de confusión
-- `summary_<pipeline>.csv` / `.md` — tabla resumen del pipeline
+- `*_metrics.txt`
+- `*_confusion_test.png`
+- `summary_<pipeline>.csv` and `summary_<pipeline>.md`
 
-Comparativas globales: ver **Política de ficheros de comparación global** arriba. Las características en caché viven en `data/processed/` (parquet + metadatos JSON cuando aplica).
+**Cached features** — extracted representations are stored under `data/processed/` as Parquet files (and optional JSON sidecars for metadata). These caches are gitignored.
+
+**Global comparisons** — multi-pipeline CSV and Markdown tables are written only when more than one pipeline is run together or regenerated via `generate_report.py`; filenames follow the rule in *Global comparison files* above (`comparison_all_pipelines` vs `comparison_pipelines_<sorted_names>`).
