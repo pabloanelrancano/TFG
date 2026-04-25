@@ -185,12 +185,28 @@ python src/run_experiments.py --pipelines baseline_561 interpretable tsfresh tsf
 
 ## Interpretable + Sequential Forward Selection (Linear SVM)
 
-Clean additive phase: **Sequential Forward Selection** on **cached** interpretable features as stored in Parquet (**no normalization or scaling** in this script), **Linear SVM** as the wrapper model, **GroupKFold by subject** on the training set. Subset sizes **50, 75, 100, 150, 200**, plus the full **225**-feature baseline. Outputs go to **`results/interpretable_sfs/`** only (they do **not** replace `results/interpretable/` or `comparison_all_pipelines.*`).
+Additive phase that compacts the **interpretable** representation. It does **not** replace any frozen core-study output (`results/interpretable/`, `results/comparison_all_pipelines.*`); everything is written under **`results/interpretable_sfs/`** only.
 
-Requires existing `data/processed/X_train_interpretable.parquet` and `X_test_interpretable.parquet` (run `python src/feature_extraction_interpretable.py` once if missing).
+**Design (final executed run):**
+
+- **Input:** cached `data/processed/X_train_interpretable.parquet` and `X_test_interpretable.parquet` (no re-extraction). Run `python src/feature_extraction_interpretable.py` once if these files are missing.
+- **Model:** **Linear SVM** from the project registry (`models.get_model("linear_svm")`, sklearn `LinearSVC`).
+- **Selection:** greedy **Sequential Forward Selection** with **GroupKFold by subject** (`n_splits` from `config.yaml`) on the training set. The official test split is used **only** for final reporting; it is **never** used to choose K.
+- **Budget:** `SFS_MAX_STEPS = 100`, with reported subset sizes `K ∈ {20, 40, 60, 80, 100, 225}`. The five SFS rows are **prefixes of the same forward path** (selecting K columns is identical to running SFS independently for each K). `K = 225` is the full interpretable baseline without selection.
+- **Scaling (practical, not methodological):** a `StandardScaler` is fitted on **train only** and applied to both train and test before SFS. This is enabled here as a **convergence/stability decision** for `LinearSVC` under the constrained laptop budget, not as a neutral preprocessing step. The thesis discussion treats it as such.
+- **Implementation choices for laptop execution:** candidate-level parallelization at each forward step (`joblib`), incremental flush of `sfs_path_log.csv` after every step, and atomic rewrites of `sfs_selected_features_per_k.json` at each checkpoint so progress is preserved if the process is interrupted.
+- **CV simplification:** selection and per-K reporting share the same `GroupKFold` splits on the full training matrix; this is **not** strict outer-inner nested CV. Estimates are optimistic vs strict nested CV but comparable across K. This trade-off, the budget, and the scaling rationale are all documented in `results/interpretable_sfs/summary_interpretable_sfs.md`.
+
+**Run:**
 
 ```bash
 python src/feature_selection_interpretable_sfs.py
 ```
 
-See `results/interpretable_sfs/summary_interpretable_sfs.md` for methodology (nested CV vs practical simplification) and the generated CSV/JSON paths.
+**Outputs (under `results/interpretable_sfs/`, gitignored):**
+
+- `sfs_cv_and_test_by_k.csv` — one row per K with `cv_mean_accuracy`, `cv_std_accuracy`, `test_accuracy`, `test_f1_macro`, `selection_mode`, `wall_clock_s`, and a `preferred_by_cv_train_only` flag.
+- `sfs_selected_features_per_k.json` — methodology metadata + the selected feature names for each K.
+- `sfs_path_log.csv` — full per-step forward path log (incremental).
+- `summary_interpretable_sfs.md` — human-readable summary with the same methodology block.
+- `confusion_test_linear_svm_preferred_by_cv.png` — confusion matrix on the official test split for the K preferred by CV.
