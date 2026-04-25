@@ -82,6 +82,7 @@ project/
     feature_extraction_tsfeatures_r.py   # tsfeatures_r extension
     r/tsfeatures_extract.R               # R driver for tsfeatures_r
     run_experiments.py
+    feature_selection_interpretable_sfs.py  # SFS on cached interpretable only
     generate_report.py
     *_Baseline.py                         # legacy per-model scripts (pre-unified runner)
   data/processed/                        # feature caches (gitignored)
@@ -90,6 +91,7 @@ project/
     interpretable/
     tsfresh/
     tsfeatures_r/                        # present only if the extension is run
+    interpretable_sfs/                   # SFS phase outputs (if you run the SFS script)
 ```
 
 `results/`, `data/`, and `.venv/` are listed in `.gitignore`; generated artifacts stay local unless you change ignore rules.
@@ -178,3 +180,17 @@ python src/run_experiments.py --pipelines baseline_561 interpretable tsfresh tsf
 **Cached features** — extracted representations are stored under `data/processed/` as Parquet files (and optional JSON sidecars for metadata). These caches are gitignored.
 
 **Global comparisons** — multi-pipeline CSV and Markdown tables are written only when more than one pipeline is run together or regenerated via `generate_report.py`; filenames follow the rule in *Global comparison files* above (`comparison_all_pipelines` vs `comparison_pipelines_<sorted_names>`).
+
+---
+
+## Interpretable + Sequential Forward Selection (Linear SVM)
+
+Clean additive phase: **Sequential Forward Selection** on **cached** interpretable features as stored in Parquet (**no normalization or scaling** in this script), **Linear SVM** as the wrapper model, **GroupKFold by subject** on the training set. Subset sizes **50, 75, 100, 150, 200**, plus the full **225**-feature baseline. Outputs go to **`results/interpretable_sfs/`** only (they do **not** replace `results/interpretable/` or `comparison_all_pipelines.*`).
+
+Requires existing `data/processed/X_train_interpretable.parquet` and `X_test_interpretable.parquet` (run `python src/feature_extraction_interpretable.py` once if missing).
+
+```bash
+python src/feature_selection_interpretable_sfs.py
+```
+
+See `results/interpretable_sfs/summary_interpretable_sfs.md` for methodology (nested CV vs practical simplification) and the generated CSV/JSON paths.
