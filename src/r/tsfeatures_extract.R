@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
-# Default tsfeatures::tsfeatures() only — per channel, one list element per window (length 128).
+# Default tsfeatures::tsfeatures() only, per channel, one list element per window (length 128).
+# Pablo Anel Rancano - TFG HAR
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 3L) {

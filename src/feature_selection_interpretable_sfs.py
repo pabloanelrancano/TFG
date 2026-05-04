@@ -1,27 +1,12 @@
 # src/feature_selection_interpretable_sfs.py
 # Pablo Anel Rancano - TFG HAR
-"""Sequential Forward Selection (Linear SVM) on cached interpretable features only.
+"""Sequential Forward Selection on the interpretable feature set.
 
-Writes under ``results/interpretable_sfs/`` without touching the frozen core study
-(``results/interpretable/``, ``comparison_all_pipelines.*``).
+Runs a greedy SFS procedure with Linear SVM and GroupKFold by subject, using
+the cached interpretable features as input. It reports selected subsets at
+predefined values of K and keeps the full 225-feature representation as the
+reference baseline.
 
-Constrained design (laptop-friendly):
-- Greedy forward SFS up to ``SFS_MAX_STEPS = 100`` selected features.
-- Reported subsets: ``SUBSET_GRID = [20, 40, 60, 80, 100, 225]``; the five SFS
-  rows share the same forward path (prefix property), and 225 is a baseline
-  row that uses **all** features without selection.
-- ``GroupKFold`` by training subjects (``n_splits`` from ``config.yaml``).
-- Candidate-level parallelization at each forward step (joblib).
-- Incremental disk writes: ``sfs_path_log.csv`` flushed after every step,
-  ``sfs_selected_features_per_k.json`` rewritten after each checkpoint.
-
-Scaling note (practical, not methodological): a ``StandardScaler`` fitted on
-**train only** is applied before SFS. This is **not** introduced as a neutral
-preprocessing choice; without scaling, the project's ``LinearSVC``
-(``max_iter=5000``) repeatedly fails to converge on the raw interpretable
-features in our tests, which makes a constrained-laptop SFS run effectively
-unusable. Scaling here is a convergence/stability decision tied to this
-specific budget; future thesis discussion can revisit it.
 """
 
 from __future__ import annotations
@@ -61,7 +46,6 @@ from evaluation import CLASS_IDS, save_confusion_matrix
 from feature_extraction_interpretable import load_features
 from models import get_model, get_model_tag
 
-# Constrained budget for laptop execution.
 SFS_MAX_STEPS: int = 100
 SUBSET_GRID: List[int] = [20, 40, 60, 80, 100, 225]
 CHECKPOINTS: set[int] = {20, 40, 60, 80, 100}
@@ -79,7 +63,6 @@ def _grouped_cv_splits(
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
-    """Write file via tmp + os.replace so partial writes never appear on disk."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
     try:
@@ -124,15 +107,7 @@ def _run_forward_sfs_with_logging(
     json_checkpoints_path: Path,
     json_meta_factory,
 ) -> Tuple[Dict[int, np.ndarray], List[int]]:
-    """Greedy forward SFS with candidate-level parallelism and incremental writes.
 
-    - Tie rule mirrors sklearn ``SequentialFeatureSelector``:
-      ``max(scores, key=lambda j: scores[j])`` over the dict built in ascending
-      candidate-index order, so on ties the smallest candidate index wins.
-    - Writes one row per step to ``path_log_csv`` and flushes immediately.
-    - After each step whose new size hits ``checkpoints``, rewrites
-      ``json_checkpoints_path`` atomically with the current per-K feature lists.
-    """
     n_features = X.shape[1]
     current_mask = np.zeros(n_features, dtype=bool)
     saved: Dict[int, np.ndarray] = {}
@@ -218,8 +193,7 @@ def _run_forward_sfs_with_logging(
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
-            "SFS with Linear SVM on cached interpretable features (constrained budget); "
-            "outputs under results/interpretable_sfs/."
+            "SFS with Linear SVM on cached interpretable features  "
         )
     )
     add_common_args(parser)
@@ -272,8 +246,7 @@ def main() -> None:
     print(f"\n[interpretable_sfs] Linear SVM, GroupKFold n_splits={n_splits}, "
           f"checkpoints={sorted(CHECKPOINTS)} + baseline 225")
     print(f"[interpretable_sfs] Output directory: {out_dir.resolve()}")
-    print(f"[interpretable_sfs] StandardScaler fit on train only "
-          f"(see docstring: convergence/stability decision for LinearSVC).\n")
+    print("[interpretable_sfs] StandardScaler fit on train only before SFS.\n")
 
     path_log_csv = out_dir / "sfs_path_log.csv"
     json_path = out_dir / "sfs_selected_features_per_k.json"
@@ -281,42 +254,17 @@ def main() -> None:
     def _meta_factory(progress: str = "") -> Dict[str, Any]:
         return {
             "model": model_tag,
-            "estimator_registry": "linear_svm -> models.get_model (sklearn.svm.LinearSVC)",
-            "grouped_cv": "GroupKFold on training subjects",
+            "estimator": "sklearn.svm.LinearSVC via models.get_model('linear_svm')",
+            "cv": "GroupKFold on training subjects",
             "n_splits": n_splits,
             "random_state": random_state,
-            "feature_scaling": (
-                "StandardScaler fit on train only. NOT a neutral preprocessing "
-                "choice: enabled here as a practical convergence/stability "
-                "decision for LinearSVC under the laptop-constrained SFS budget."
-            ),
+            "feature_scaling": "StandardScaler fitted on train only before SFS.",
             "subset_sizes": SUBSET_GRID,
             "sfs_max_steps": SFS_MAX_STEPS,
-            "tie_break_cv": "Max cv_mean_accuracy; on ties prefer smaller n_features (parsimony).",
-            "sfs_implementation": (
-                "Single greedy forward pass up to SFS_MAX_STEPS=100 with "
-                "GroupKFold splits passed as an iterable of (train_idx, test_idx). "
-                "Candidate-level parallelization (joblib) at each step. "
-                "Subsets at 20/40/60/80/100 are prefixes of that path "
-                "(identical to running SFS separately for each K). K=225 uses "
-                "all columns without selection as a baseline reference."
-            ),
-            "nested_cv_note": (
-                "This is NOT fully nested outer-inner CV. Selection uses grouped "
-                "CV on the full training matrix; reported cv_mean/std per row "
-                "refit LinearSVM on the selected columns with the same "
-                "GroupKFold splits. Estimates are optimistic vs strict nested "
-                "CV but comparable across K; the official test set was not used "
-                "to choose K."
-            ),
-            "constrained_budget_note": (
-                "An initial deeper design (up to ~200 selected features) was "
-                "considered but proved computationally infeasible on the TFG "
-                "laptop. After a first 40-step run, the budget was expanded to "
-                "SFS_MAX_STEPS=100 with K grid {20, 40, 60, 80, 100} plus a "
-                "225-feature baseline; this remains a constrained budget vs "
-                "the originally considered design."
-            ),
+            "selection": "Single greedy forward pass; reported SFS subsets are prefixes of the same path.",
+            "baseline": "K=225 uses all interpretable features without selection.",
+            "test_usage": "The official test set is used only for final reporting, not to choose K.",
+            "nested_cv": "This is not a strict nested-CV protocol.",
             "progress": progress,
         }
 
@@ -462,45 +410,18 @@ def main() -> None:
         md_body_lines.append("| " + " | ".join(vals) + " |")
 
     lines = [
-        "# Interpretable pipeline — Sequential Forward Selection (Linear SVM, constrained budget)",
+        "# Interpretable pipeline — Sequential Forward Selection",
         "",
         "## Design",
         "",
-        "- **Input:** cached `X_*_interpretable.parquet` (no re-extraction).",
-        "- **Scaling (practical decision, not methodological):** `StandardScaler` "
-        "is fitted on **train only** and applied to both train and test "
-        "**before** SFS. This is **not** introduced as a neutral preprocessing "
-        "step: without scaling, the project's `LinearSVC` (`max_iter=5000`) "
-        "fails to converge consistently on the raw interpretable matrix, which "
-        "makes the constrained-laptop SFS budget unusable. It is a "
-        "convergence/stability choice tied to this specific budget and is "
-        "discussed as such in the TFG.",
-        "- **Model:** Linear SVM from `models.get_model(\"linear_svm\")` "
-        "(sklearn `LinearSVC`).",
-        "- **Selection:** greedy forward SFS with **GroupKFold** splits on "
-        f"**train subjects** (`n_splits={n_splits}`), candidate-level "
-        "parallelization (joblib), same tie-breaking as sklearn "
-        "`SequentialFeatureSelector`.",
-        f"- **SFS budget:** `SFS_MAX_STEPS = {SFS_MAX_STEPS}` (constrained for "
-        "laptop execution; a larger design was considered but proved "
-        "computationally infeasible).",
-        "- **Subset sizes reported:** " + ", ".join(str(k) for k in SUBSET_GRID) +
-        f" (the SFS rows are prefixes of the same {SFS_MAX_STEPS}-step forward "
-        "path; 225 is the full interpretable baseline without selection).",
-        "- **Preferred K:** highest `cv_mean_accuracy` on train; ties → smaller K.",
-        "- **Test:** used only for reporting in this table — **not** used to pick K.",
-        "",
-        "### Nested CV?",
-        "",
-        final_meta["nested_cv_note"],
-        "",
-        "### Constrained budget",
-        "",
-        final_meta["constrained_budget_note"],
-        "",
-        "### SFS path efficiency",
-        "",
-        final_meta["sfs_implementation"],
+        "- **Input:** cached interpretable features.",
+        "- **Model:** Linear SVM.",
+        "- **Validation:** GroupKFold by training subject.",
+        f"- **SFS budget:** {SFS_MAX_STEPS} forward-selection steps.",
+        "- **Reported subset sizes:** " + ", ".join(str(k) for k in SUBSET_GRID) + ".",
+        "- **Baseline:** K=225 uses all interpretable features without selection.",
+        "- **Scaling:** StandardScaler fitted on train only before SFS.",
+        "- **Test usage:** the official test set is used only for final reporting.",
         "",
         "## Results",
         "",
@@ -508,18 +429,17 @@ def main() -> None:
         md_sep,
         *md_body_lines,
         "",
-        f"- **Preferred by CV (train):** K = **{preferred_k}** "
+        f"- **Preferred by CV:** K = **{preferred_k}** "
         f"(cv_mean = {pref_row['cv_mean_accuracy']:.4f}).",
-        f"- **Full baseline (225 features):** test_acc = "
+        f"- **Full 225-feature baseline:** test_acc = "
         f"{baseline_row['test_accuracy']:.4f}, "
         f"cv_mean = {baseline_row['cv_mean_accuracy']:.4f}.",
         f"- **Preferred K test accuracy:** {pref_row['test_accuracy']:.4f} "
-        f"(vs 225-feature test {baseline_row['test_accuracy']:.4f}).",
+        f"(vs {baseline_row['test_accuracy']:.4f} with all 225 features).",
         "",
-        f"Confusion matrix (test, preferred K): `{cm_path.name}`",
-        "",
+        f"Confusion matrix: `{cm_path.name}`",
         f"Feature lists per K: `{json_path.name}`",
-        f"Per-step forward path log: `{path_log_csv.name}`",
+        f"Forward path log: `{path_log_csv.name}`",
         f"Table CSV: `{csv_path.name}`",
         "",
     ]
